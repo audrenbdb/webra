@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ZPL Renderer</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20height%3D%2224px%22%20viewBox%3D%220%20-960%20960%20960%22%20width%3D%2224px%22%20fill%3D%22%235f6368%22%3E%3Cpath%20d%3D%22M640-640v-120H320v120h-80v-200h480v200h-80Zm-480%2080h640-640Zm560%20100q17%200%2028.5-11.5T760-500q0-17-11.5-28.5T720-540q-17%200-28.5%2011.5T680-500q0%2017%2011.5%2028.5T720-460Zm-80%20260v-160H320v160h320Zm80%2080H240v-160H80v-240q0-51%2035-85.5t85-34.5h560q51%200%2085.5%2034.5T880-520v240H720v160Zm80-240v-160q0-17-11.5-28.5T760-560H200q-17%200-28.5%2011.5T160-520v160h80v-80h480v80h80Z%22/%3E%3C/svg%3E"
+      type="image/svg+xml"
+    />
+  </head>
+  <body>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      body {
+        background: rgba(1, 1, 1, 0.8);
+      }
+
+      .print-wrapper,
+      #hello-card {
+        position: relative;
+        height: 100vh;
+      }
+
+      .print {
+        max-width: 420px;
+        max-height: 640px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      #hello-card {
+        position: relative;
+        height: 100vh;
+        background: #fff;
+      }
+
+      #hello {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 40px;
+        font-size: 24px;
+      }
+
+      .print-wrapper {
+        animation: slideInPop 0.5s ease-in-out forwards;
+        opacity: 0; /* Initially hidden */
+        transform: scale(0.8); /* Initially scaled down */
+      }
+
+      @keyframes slideInPop {
+        0% {
+          opacity: 0;
+          transform: translateX(-20px) scale(0.8);
+        }
+        70% {
+          /* Separate the scale from slide in */
+          transform: translateX(0px) scale(0.8);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+      }
+    </style>
+
+    <div class="prints">
+      <div id="hello-card">
+        <div id="hello">
+          <div>Connecting...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const prints = document.querySelector(".prints");
+      const eventSource = new EventSource("/sse"); // Use EventSource
+
+      eventSource.addEventListener("open", (event) => {
+        const hello = document.getElementById("hello");
+        if (hello) {
+          hello.innerText = "Waiting for print...";
+        }
+      });
+
+      eventSource.addEventListener("message", (event) => {
+        const hello = document.getElementById("hello-card");
+        if (hello) {
+          prints.removeChild(hello);
+        }
+
+        const printWrapper = document.createElement("div");
+        printWrapper.classList.add("print-wrapper");
+
+        const print = document.createElement("img");
+        print.classList.add("print");
+        print.src = "data:image/png;base64," + event.data;
+        printWrapper.appendChild(print);
+
+        prints.insertBefore(printWrapper, prints.firstChild);
+      });
+    </script>
+  </body>
+</html>
