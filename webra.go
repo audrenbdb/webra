@@ -105,21 +105,38 @@ func (server *Server) ListenAndServe() error {
 func (server *Server) runHTTPListener() error {
 	logger := server.Logger.With("addr", server.HTTPAddr)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write(indexHTML)
 	})
 
-	http.HandleFunc("/sse", server.serveSSE)
+	mux.HandleFunc("/sse", server.serveSSE)
 
 	logger.Info("serving fake printer webpage")
 
-	err := http.ListenAndServe(server.HTTPAddr, nil)
+	err := http.ListenAndServe(server.HTTPAddr, server.corsMiddleware(mux))
 	if err != nil {
 		return fmt.Errorf("listen and serve webra fake printer: %w", err)
 	}
 
 	return nil
+}
+
+func (server *Server) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == http.MethodOptions {
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (server *Server) serveSSE(w http.ResponseWriter, r *http.Request) {
